@@ -17,6 +17,6 @@ void loop() {
     digitalWrite(newLED, HIGH);
     delay(10);
     digitalWrite(newLED, LOW);
-    delay(10);
+    delay(5);//Sierra's Change!
   }
 }
