@@ -18,5 +18,6 @@ void loop() {
     delay(10);
     digitalWrite(newLED, LOW);
     delay(5);//Sierra's Change!
+    delay(4); //Jack's change
   }
 }
