@@ -1,23 +1,27 @@
 
+#include <DFRobot_DF1201S.h>
+#include <SoftwareSerial.h>
+
 //Input
-#define OnButton 8
+#define OnButton 13
 
 #define Flex_Right A4
 #define Flex_Left A5
 
-#define AudioSensor A3
+#define AudioSensor A0
 
-#define TiltSens 7
+#define TiltSens 8
 
-#define NoseButton 4
+#define NoseButton 7
 
 //Output
-#define SpeakerSound 1
+SoftwareSerial DF1201SSerial(2, 3);  //RX  TX
+DFRobot_DF1201S DF1201S;
 
 //variables
 bool isBatOn= false;
 int score = 0;
-int TimeLimit = 10;
+int TimeLimit = 9999;
 
 int SoundBase = 800;
 int dB_threshold= 200;
@@ -27,6 +31,9 @@ int RightWingBase = 700;
 int WingMove_threshold = 200;
 
 int res_threshold = 5;
+
+int timesTilted = 0;
+int TiltedThres = 150;
 
 
 void setup() 
@@ -39,17 +46,36 @@ void setup()
   pinMode(AudioSensor, INPUT);
   pinMode(TiltSens, INPUT);
   pinMode(NoseButton, INPUT);
-  pinMode(8, OUTPUT);
+  pinMode(OnButton, INPUT);
   //pinMode(SpeakerSound, OUTPUT);
   Serial.begin(9600); 
   randomSeed(analogRead(0));
+
+  //Serial.begin(115200);
+  DF1201SSerial.begin(115200);
+  /*while(!DF1201S.begin(DF1201SSerial)){
+    Serial.println("Init failed, please check the wire connection!");
+    delay(1000);}*/
 }
 
 void loop() 
 {
   /*
+  Serial.print(analogRead(AudioSensor));
+  Serial.print("  ");
+  Serial.print(CheckScreamIt());
+  Serial.print("\n");
+  
   // put your main code here, to run repeatedly:
-  int a = analogRead(AudioSensor);
+  Serial.print(analogRead(AudioSensor));
+  Serial.print("  ");
+  Serial.print(CheckScreamIt());
+  Serial.print("\n");
+
+  
+  int a = digitalRead(OnButton);
+  Serial.print(a);
+  
   if(a>1000)
   {
     Serial.print(analogRead(AudioSensor));
@@ -70,9 +96,10 @@ void loop()
     }
   }
   
-  delay(3000);
+  delay(200);
   */
-  if (OnButton == HIGH && !isBatOn) 
+  
+  if (digitalRead(OnButton) == HIGH && !isBatOn) 
   { 
     isBatOn= true;
     score = 0;
@@ -80,8 +107,12 @@ void loop()
   }
   if(isBatOn)
   {
-    delay(2000);
-    isBatOn = CallCommand();
+    delay(1000);
+    Serial.print("Call Com. Score: ");
+    Serial.print(score);
+    Serial.print("\n");
+    CallCommand();
+    
   }
   
 }
@@ -94,17 +125,23 @@ bool CallCommand()
   }
   else
   {
+    delay(1000);
     //Generate random number between 1-4 = x
     int randNumber = random(1, 5);
+    if(randNumber ==2)
+    {
+      randNumber = 3;
+    }
     
     //TODO: Output command for user to start;
     int code=5;
-    PlaySound(randNumber);
+    PlaySound(randNumber+100);
     
     //Get Base for Audio and Flex
     getBases();
     
     int Time = 0;
+    timesTilted=0; //reset times tilted
     
     //In time limit...
     while(Time < TimeLimit) 
@@ -125,6 +162,7 @@ bool CallCommand()
           }
           else if(isLoud ||isTilted || isBent)
           {
+            Serial.print("Other input1. ");
             Lose();
             return false;
           }
@@ -138,6 +176,7 @@ bool CallCommand()
           }
           else if(isBooped ||isTilted || isBent)
           {
+            Serial.print("Other input2. ");
             Lose();
             return false;
           }
@@ -151,6 +190,7 @@ bool CallCommand()
           }
           else if(isBooped ||isLoud || isBent)
           {
+            Serial.print("Other input3. ");
             Lose();
             return false;
           }
@@ -164,6 +204,7 @@ bool CallCommand()
           }
           else if(isBooped ||isLoud || isTilted)
           {
+            Serial.print("Other input4. ");
             Lose();
             return false;
           }
@@ -171,6 +212,7 @@ bool CallCommand()
       }
       Time++;
     }
+    Serial.print("Time Up. ");
     Lose();
     return false;
   }
@@ -184,6 +226,7 @@ bool CheckBoopIt()
   int a = digitalRead(NoseButton);
   if(a==HIGH)
   {
+    Serial.print(" Booped ");
     return true;
   }
   else
@@ -196,8 +239,13 @@ bool CheckScreamIt()
 {
   //poll for if task completed
   int soundinput = analogRead(AudioSensor);
+  //Serial.print(soundinput);
+  //Serial.print("\n");
   if (soundinput > SoundBase+dB_threshold)
   {
+    Serial.print(" Loud ");
+    Serial.print(soundinput);
+    //Serial.print(soundinput);
     return true;
   }
   return false;
@@ -207,9 +255,14 @@ bool CheckTiltIt ()
 {
   //poll for if task completed
   int movement = digitalRead(TiltSens);
-  if (movement ==HIGH)
+  if (movement ==LOW)
   {
-    return true;
+    timesTilted++;
+    if(timesTilted>=TiltedThres)
+    {
+      Serial.print(" Tilted ");
+      return true;
+    }
   }
   return false;
 }
@@ -223,6 +276,7 @@ bool CheckBendIt()
   if (LeftBent > LeftWingBase+WingMove_threshold || LeftBent < LeftWingBase-WingMove_threshold 
     || RightBent > RightWingBase+WingMove_threshold || RightBent < RightWingBase-WingMove_threshold)
   {
+    Serial.print(" Bended ");
     return true;
   }
   return false;
@@ -251,7 +305,7 @@ void Win()
 {
   //Output Winner audio;
   int code=5;
-  PlaySound(code);
+  PlaySound(score);
   
   //Output score of 99 audio;
   isBatOn=false;
@@ -259,13 +313,18 @@ void Win()
 
 void Lose()
 {
+  //Output score of user;
+  isBatOn=false;
+  
   //Output Loser audio;
-  Serial.print("LOST\n");
+  Serial.print("LOST  ");
+  Serial.print(isBatOn);
+  Serial.print("\n");
+  
   int code=5;
   PlaySound(code);
   
-  //Output score of user;
-  isBatOn=false;
+  
 }
 
 
@@ -273,26 +332,67 @@ void TaskCompleted()
 {
   score++;
   TimeLimit--;//decrease time limit to make more difficult
-  CallCommand(); //go back to function to generate
+  //CallCommand(); //go back to function to generate
 }
 
 void PlaySound(int code)
 {
-  //TODO: Send code for certain sounds to speaker
-
-  switch (code)
+  //get score digits
+  int tens =0;
+  int ones = 0;
+  ones= score%10;
+  tens = (score - ones)/10;
+  
+  //0 thru 98 parse and output num
+  if(code>=0 && code<=98)
   {
-    case 1:
-      Serial.print("Boop it\n");
-      break;
-    case 2:
-      Serial.print("Clap it\n");
-      break;
-    case 3:
-      Serial.print("Tilt it\n");
-      break;
-    case 4:
-      Serial.print("Bend it\n");
-      break;
-  }   
+    if(tens!= 0)
+    {
+      DF1201S.playFileNum(/*File Number = */tens); //first digit
+    }
+    DF1201S.playFileNum(/*File Number = */ones); //second digit
+  }
+  //99 win sound and num
+  else if (code==99)
+  {
+    DF1201S.playFileNum(/*File Number = */11); //Win
+    if(tens!= 0)
+    {
+      DF1201S.playFileNum(/*File Number = */tens); //first digit
+    }
+    DF1201S.playFileNum(/*File Number = */ones); //second digit
+  }
+  //100 lose sound and score
+  else if(code == 100)
+  {
+    DF1201S.playFileNum(/*File Number = */12); //Lose
+    if(tens!= 0)
+    {
+      DF1201S.playFileNum(/*File Number = */tens); //first digit
+    }
+    DF1201S.playFileNum(/*File Number = */ones); //second digit
+  }
+  //101 thru 104 -> boop/tilt/bend/loud command
+  else
+  {
+    switch (code)
+    {
+      case 101:
+        Serial.print("Boop it\n");
+        DF1201S.playFileNum(/*File Number = */13); //Boop
+        break;
+      case 102:
+        Serial.print("Clap it\n");
+        DF1201S.playFileNum(/*File Number = */14); //Clap
+        break;
+      case 103:
+        Serial.print("Tilt it\n");
+        DF1201S.playFileNum(/*File Number = */15); //Tilt
+        break;
+      case 104:
+        Serial.print("Bend it\n");
+        DF1201S.playFileNum(/*File Number = */16); //Bend
+        break;
+    } 
+  }
 }
