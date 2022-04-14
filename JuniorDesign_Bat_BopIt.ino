@@ -15,8 +15,10 @@
 #define NoseButton 7
 
 //Output
-SoftwareSerial DF1201SSerial(2, 3);  //RX  TX
-DFRobot_DF1201S DF1201S;
+//SoftwareSerial DF1201SSerial(2, 3);  //RX  TX
+//DFRobot_DF1201S DF1201S;
+#define speakerPin 2
+#define LEDPin 3
 
 //variables
 bool isBatOn= false;
@@ -47,17 +49,34 @@ void setup()
   pinMode(TiltSens, INPUT);
   pinMode(NoseButton, INPUT);
   pinMode(OnButton, INPUT);
+  pinMode(speakerPin, OUTPUT);
+  pinMode(LEDPin, OUTPUT);
   //pinMode(SpeakerSound, OUTPUT);
   Serial.begin(9600); 
   randomSeed(analogRead(0));
 
   //Serial.begin(115200);
-  DF1201SSerial.begin(115200);
+  //DF1201SSerial.begin(115200);
   /*while(!DF1201S.begin(DF1201SSerial)){
     Serial.println("Init failed, please check the wire connection!");
     delay(1000);}*/
 }
+void dot(){
+  Serial.print("Dot ");
+  digitalWrite(speakerPin, HIGH);
+  delay(500);
+  digitalWrite(speakerPin, LOW);
+  delay(500);
 
+}
+void dash()
+{
+  Serial.print("Dash ");
+  digitalWrite(speakerPin, HIGH);
+  delay(1000);
+  digitalWrite(speakerPin, LOW);
+  delay(500);
+}
 void loop() 
 {
   /*
@@ -97,8 +116,8 @@ void loop()
   }
   
   delay(200);
-  */
   
+  */
   if (digitalRead(OnButton) == HIGH && !isBatOn) 
   { 
     isBatOn= true;
@@ -114,6 +133,7 @@ void loop()
     CallCommand();
     
   }
+  
   
 }
 
@@ -134,7 +154,6 @@ bool CallCommand()
     }
     
     //TODO: Output command for user to start;
-    int code=5;
     PlaySound(randNumber+100);
     
     //Get Base for Audio and Flex
@@ -304,8 +323,8 @@ void getBases()
 void Win()
 {
   //Output Winner audio;
-  int code=5;
-  PlaySound(score);
+  int code=99;
+  PlaySound(code);
   
   //Output score of 99 audio;
   isBatOn=false;
@@ -321,8 +340,9 @@ void Lose()
   Serial.print(isBatOn);
   Serial.print("\n");
   
-  int code=5;
+  int code=100;
   PlaySound(code);
+  PlaySound(score);
   
   
 }
@@ -332,67 +352,232 @@ void TaskCompleted()
 {
   score++;
   TimeLimit--;//decrease time limit to make more difficult
+  PlaySound(105);
   //CallCommand(); //go back to function to generate
 }
 
+
+
+
+void one()
+{
+  dot();
+  dash();
+  dash();
+dash();
+}
+void two()
+{
+  dot();
+  dot();
+  dash();
+  dash();
+dash();
+}
+void three()
+{
+  dot();
+  dot();
+  dot();
+  dash();
+dash();
+}
+void four()
+{
+  dot();
+  dot();
+  dot();
+  dot();
+dash();
+}
+void five()
+{
+  dot();
+  dot();
+  dot();
+  dot();
+dot();
+}
+void six()
+{
+  dash();
+  dot();
+  dot();
+  dot();
+dot();
+} 
+void seven()
+{
+  dash();
+  dash();
+  dot();
+  dot();
+dot();
+}
+void eight()
+{
+  dash();
+  dash();
+  dash();
+  dot();
+dot();
+}
+void nine()
+{
+  dash();
+  dash();
+  dash();
+  dash();
+dot();
+}
+void zero()
+{
+  dash();
+  dash();
+  dash();
+  dash();
+  dash();
+}
+
+void outputDigit(int digit)
+{
+   switch(digit)
+   {
+      case 1:
+        one();
+        break;
+      case 2:
+        two();
+        break;
+      case 3:
+        three();
+        break;
+      case 4:
+        four();
+        break;
+      case 5:
+        five();
+        break;
+      case 6:
+        six();
+        break;
+      case 7:
+        seven();
+        break;
+      case 8:
+        eight();
+        break;
+      case 9:
+        nine();
+        break;
+      case 0:
+        zero();
+        break;
+    }
+}
+ 
+void wrongOutput()
+{
+digitalWrite(speakerPin, HIGH);
+digitalWrite(LEDPin, HIGH);
+delay(1500);
+digitalWrite(speakerPin, LOW);
+digitalWrite(LEDPin, LOW);
+delay(1000);
+}
+
+void winOutput()
+{
+digitalWrite(speakerPin, HIGH);
+digitalWrite(LEDPin, HIGH);
+delay(500);
+digitalWrite(speakerPin, LOW);
+digitalWrite(LEDPin, LOW);
+delay(500);
+
+digitalWrite(speakerPin, HIGH);
+digitalWrite(LEDPin, HIGH);
+delay(500);
+digitalWrite(speakerPin, LOW);
+digitalWrite(LEDPin, LOW);
+delay(500);
+
+digitalWrite(speakerPin, HIGH);
+digitalWrite(LEDPin, HIGH);
+delay(500);
+digitalWrite(speakerPin, LOW);
+digitalWrite(LEDPin, LOW);
+delay(500);
+
+digitalWrite(speakerPin, HIGH);
+digitalWrite(LEDPin, HIGH);
+delay(500);
+digitalWrite(speakerPin, LOW);
+digitalWrite(LEDPin, LOW);
+delay(500);
+} 
 void PlaySound(int code)
 {
+  //Right LED Flash
+  // Wrong solid
+
+    
   //get score digits
   int tens =0;
   int ones = 0;
   ones= score%10;
   tens = (score - ones)/10;
   
-  //0 thru 98 parse and output num
   if(code>=0 && code<=98)
   {
-    if(tens!= 0)
+    if(tens!=0)
     {
-      DF1201S.playFileNum(/*File Number = */tens); //first digit
+      outputDigit(tens);
+      delay(200);
     }
-    DF1201S.playFileNum(/*File Number = */ones); //second digit
+    outputDigit(ones);
   }
-  //99 win sound and num
   else if (code==99)
   {
-    DF1201S.playFileNum(/*File Number = */11); //Win
-    if(tens!= 0)
-    {
-      DF1201S.playFileNum(/*File Number = */tens); //first digit
-    }
-    DF1201S.playFileNum(/*File Number = */ones); //second digit
+    //win beeping and LED
+    winOutput();
+    outputDigit(tens);
+    outputDigit(ones);
   }
-  //100 lose sound and score
   else if(code == 100)
   {
-    DF1201S.playFileNum(/*File Number = */12); //Lose
-    if(tens!= 0)
-    {
-      DF1201S.playFileNum(/*File Number = */tens); //first digit
-    }
-    DF1201S.playFileNum(/*File Number = */ones); //second digit
+    //Lose Solid 
+    wrongOutput();
   }
-  //101 thru 104 -> boop/tilt/bend/loud command
+  else if(code == 105)
+  {
+    digitalWrite(LEDPin, HIGH);
+    delay(500);
+    digitalWrite(LEDPin, LOW);
+    delay(500);
+  }
   else
   {
     switch (code)
     {
       case 101:
-        Serial.print("Boop it\n");
-        DF1201S.playFileNum(/*File Number = */13); //Boop
+        //Boop
+        dot();
         break;
       case 102:
-        Serial.print("Clap it\n");
-        DF1201S.playFileNum(/*File Number = */14); //Clap
+        //Clap
         break;
       case 103:
-        Serial.print("Tilt it\n");
-        DF1201S.playFileNum(/*File Number = */15); //Tilt
+        //Tilt
+        dot();
+        dot();
         break;
       case 104:
-        Serial.print("Bend it\n");
-        DF1201S.playFileNum(/*File Number = */16); //Bend
+        //Bend
+        dot();
+        dot();
+        dot();
         break;
-    } 
+    }
   }
 }
