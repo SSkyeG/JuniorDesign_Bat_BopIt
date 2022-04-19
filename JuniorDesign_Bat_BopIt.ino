@@ -78,6 +78,7 @@ void setup()
 
 void loop() 
 {
+  /*
   Serial.print("Start\n");
   DF1201S.start();
   speaker(0);
@@ -89,7 +90,7 @@ void loop()
   speaker(103);
   speaker(104);
   
-/*
+
   Serial.print(analogRead(AudioSensor));
   Serial.print(" h ");
   Serial.print(CheckScreamIt());
@@ -128,7 +129,7 @@ void loop()
   
   delay(200);
   
-  
+  */
   if (digitalRead(OnButton) == HIGH && !isBatOn) 
   { 
     isBatOn= true;
@@ -144,7 +145,7 @@ void loop()
     CallCommand();
     
   }
-  */
+  
   
 }
 
@@ -452,7 +453,7 @@ void speaker(int code)
 }
 
 //-------------------------------------------
-
+/*
 void dot()
 {
   Serial.print("Dot ");
@@ -693,3 +694,4 @@ void PlaySound(int code)
     }
   }
 }
+*/
